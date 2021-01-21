@@ -20,6 +20,12 @@ public class Product {
     @Column(name = "barcode", nullable = false)
     private String barCode;
 
+    public Product(Long sku, String description, String barCode) {
+        this.sku = sku;
+        this.description = description;
+        this.barCode = barCode;
+    }
+
     public Long getId() {
         return id;
     }

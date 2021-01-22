@@ -2,7 +2,7 @@ package br.com.avaliacao.testealelo.controller;
 
 import br.com.avaliacao.testealelo.exceptions.NotFoundException;
 import br.com.avaliacao.testealelo.model.Product;
-import br.com.avaliacao.testealelo.repository.ProductRepository;
+import br.com.avaliacao.testealelo.service.ProductService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -11,19 +11,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
 @Api(value = "Product")
 public class ProductController {
 
-    private ProductRepository productRepository;
+    private ProductService productService;
 
     @Autowired
-    public ProductController(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
     }
 
     @ApiOperation(value = "Retorna todos os produtos")
@@ -34,7 +34,7 @@ public class ProductController {
     @GetMapping(value = "/products")
     public ResponseEntity<List<Product>> getProducts() {
      return new ResponseEntity<>(
-             productRepository.findAll(),
+             productService.getAll(),
              HttpStatus.OK
      );
     }
@@ -47,12 +47,26 @@ public class ProductController {
     })
     @GetMapping( value = "/products/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable(value = "id") Long id) throws NotFoundException{
-        Product product = productRepository.findById(id).orElseThrow(() -> new NotFoundException("Product not found"));
+        Product product = productService.getById(id).orElseThrow(() -> new NotFoundException("Product not found"));
         return new ResponseEntity<Product>(
                 product,
                 HttpStatus.OK
         );
 
+    }
+
+    @ApiOperation(value = "Retorna um produto específico pelo sku")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Retorna o produto"),
+            @ApiResponse(code = 404, message = "Não há registro do produto com sku informado"),
+            @ApiResponse(code = 500, message = "Foi gerada alguma exceção")
+    })
+    @GetMapping( value = "/products/sku/{sku}")
+    public ResponseEntity<Optional<Product>> getProductBySku(@PathVariable(value = "sku") Long sku) {
+         return new ResponseEntity<Optional<Product>>(
+                 productService.getBySku(sku),
+                 HttpStatus.OK
+         );
     }
 
     @ApiOperation(value = "Salva um produto")
@@ -62,7 +76,7 @@ public class ProductController {
     })
     @PostMapping(value = "/products")
     public Product postProduct(@RequestBody Product product) {
-        return productRepository.save(product);
+        return productService.save(product);
     }
 
     @ApiOperation(value = "Atualiza um produto específico pelo id")
@@ -73,12 +87,12 @@ public class ProductController {
     })
     @PutMapping(value = "/products/{id}")
     public ResponseEntity putProduct(@RequestBody Product product, @PathVariable(value = "id") Long id) throws NotFoundException {
-        return productRepository.findById(id)
+        return productService.getById(id)
                 .map(pro -> {
                     pro.setSku(product.getSku());
                     pro.setBarCode(product.getBarCode());
                     pro.setDescription(product.getDescription());
-                    Product updatedProduct = productRepository.save(pro);
+                    Product updatedProduct = productService.save(pro);
                     return new ResponseEntity(
                             updatedProduct,
                             HttpStatus.OK
@@ -96,9 +110,9 @@ public class ProductController {
     @DeleteMapping(value = "/products/{id}")
     public ResponseEntity deleteProduct(@PathVariable(value = "id") Long id) {
 
-        return productRepository.findById(id)
+        return productService.getById(id)
                 .map(pro -> {
-                    productRepository.deleteById(id);
+                    productService.delete(id);
                     return new ResponseEntity(
                          "The product was removed successfully",
                          HttpStatus.OK

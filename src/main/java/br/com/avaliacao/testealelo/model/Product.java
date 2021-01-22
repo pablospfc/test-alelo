@@ -26,6 +26,9 @@ public class Product {
         this.barCode = barCode;
     }
 
+    public Product() {
+    }
+
     public Long getId() {
         return id;
     }
